@@ -1,16 +1,19 @@
 # AIM OF THE PROJECT
-Creating the perfect Cluedo player, who extracts all the possible information
-from the ongoing game, delivering the solution as soon as it is logically
-possible.
+The aim of the project is to create the perfect Cluedo player, who extracts all
+the possible information from the ongoing game, delivering the solution as soon
+as it is logically possible.
 
 The initial idea is to realize an algorithm which can be fed up with the events
 of the game in the simplest way possible, making its way towards the solution.
+
+Python-wise, this project is a way for me to explore the object-oriented 
+programming which I rarely use while performing data analysis.
 
 ## V 0.0
 ### Preliminary reasoning on the game structure
 From the perspective of a single player (A)
 
-Information's sources
+#### Information's sources
 1. Cards received by (A) at the beginning of the game
     1. Exclude from the components of the murder the cards (A) owns
 1. Other players' reaction to accusations by (A)
@@ -31,8 +34,7 @@ In brief, the process consist in gradually excluding elements from the three
 pools of items (characters, weapons, rooms) until each of them includes only a
 single item.
 
-### Describing the game phases and their role in information gathering
-Four game phases:
+#### Four game phases:
 1. [ONE SHOT] Beginning of the game:
     1. Rule out from the suspects the cards owned by (A)
 1. [RECURSIVE] Cards publicly revealed:
@@ -74,6 +76,9 @@ in each of them?
     - If yes, call [S, W, P] the three items included in the accusation:
         1. While PLAYER do not have the cards:
             - Store the fact that they do not own neither [S, W, P]
+            - Check if there is any element nobody owns
+                - If yes and if there are no covered cards on the table:
+                    - Store it as one of the three final cards
         1. When a PLAYER has a card:
             - Store that PLAYER owns that card
             - Remove from the suspects the card revealed
@@ -83,6 +88,9 @@ in each of them?
     - If yes, call [S, W, P] the three items included in the accusation:
         1. While PLAYERS do not have the cards:
             - Store the fact that they do not own neither [S, W, P]
+            - Check if there is any element nobody owns
+                - If yes and if there are no covered cards on the table:
+                    - Store it as one of the three final cards
         1. When a PLAYER has a card:
             - Take away from [S, W, P] the cards which PLAYER is registered not
             to have
