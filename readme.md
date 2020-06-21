@@ -55,6 +55,7 @@ The algorithm builds on three list:
 1. The list of the cards not owned by each player.
     - Containing N-1 lists, one for each player.
 
+Sequence of the events:
 1. Check the pools of suspects for the three categories. Is there a single item
 in each of them?
     - If yes:
