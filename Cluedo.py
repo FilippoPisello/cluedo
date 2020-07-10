@@ -26,33 +26,50 @@ class CluedoGame:
         yes_answers = ["Yes", "yes", "Y", "y", 1, "1"]
 
         while self.prob_guessing != 1:
+            action = input(f"Did {self.players_list[player].lower()} make "
+                           "an accusation? ")
+            if action in yes_answers:
+                accusation = self.accusation()  # List of three items
+                player_showed = self.input_in_list("Which player showed the "
+                                                   "card?", type="players")
+            players_passing = self.players_not_showing(self.players_list[player],
+                                                       player_showed)
+            self.update_card_not_owned(players_passing, accusation)
+            # Distinguisihing the actions between "You" and the other players
             if self.players_list[player] == "You":
-                action = input("Did you make an accusation? ")
-                if action in yes_answers:
-                    accusation = self.accusation()  # List of three items
-                    player_showed = self.input_in_players("Which player showed "
-                                                          "you a card?")
-                    card_showed = self.input_in_accusation(accusation, "Which "
-                                                           "card was shown to "
-                                                           "you?")
+                card_showed = self.input_in_list("Which card was shown to you?",
+                                                 type="accusation",
+                                                 accusation_list=accusation)
+                self.remove_from_suspects(card_showed)
+                self.update_card_not_owned(self.players_list, card_showed,
+                                           player_excl=player_showed)
 
-                    self.remove_from_suspects(card_showed)
-                    self.update_card_not_owned(self.players_list, card_showed,
-                                               player_excl=player_showed)
-                    players_passing = self.players_not_showing("You",
-                                                               player_showed)
-                    self.update_card_not_owned(players_passing, accusation)
-                    self.update_card_owned(player_showed, card_showed)
-                    self.interact_information()
-                    self.disp_guessings_probab()
+                self.update_card_owned(player_showed, card_showed)
+                self.interact_information()
+                self.disp_guessings_probab()
 
-                    print(self.cards_owned)  # TO BE REMOVED
-                    print(self.cards_not_owned)  # TO BE REMOVED
+                print("CARDS OWNED")
+                print(self.cards_owned)  # TO BE REMOVED
+                print("CARDS NOT OWNED")
+                print(self.cards_not_owned)  # TO BE REMOVED
+                print("SUSPECTS")
+                print(self.suspects)
+                print()
             else:
-                print("Still to be coded")
-                break
+                self.update_card_owned(player_showed, accusation)
+                self.interact_information()
+                self.disp_guessings_probab()
 
-            player = self.go_to_next_player(player)
+                print("CARDS OWNED")
+                print(self.cards_owned)  # TO BE REMOVED
+                print("CARDS NOT OWNED")
+                print(self.cards_not_owned)  # TO BE REMOVED
+                print("SUSPECTS")
+                print(self.suspects)
+                print()
+
+            # Go to next player
+            player = (player + 1) % self.players_number
 
     # 2) GAME DYNAMICS: functions capturing specific dynamics of the game
     def game_start(self):
@@ -64,7 +81,8 @@ class CluedoGame:
             order = ["first", "second", "third", "fourth", "fifth", "sixth"
                      "seventh", "eighth", "ninth", "tenth"]
             card_number = order[counter]
-            item = self.input_in_items(f"Please insert your {card_number} card")
+            item = self.input_in_list(f"Please insert your {card_number} card",
+                                      type="items")
             self.remove_from_suspects(item)
             self.cards_owned["You"][counter].append(item)
             self.update_card_not_owned(self.players_list, item,
@@ -79,7 +97,7 @@ class CluedoGame:
         return
 
     def card_revealed(self):
-        item = self.input_in_items("Which card was revealed?")
+        item = self.input_in_list("Which card was revealed?", type="items")
         self.remove_from_suspects(item)
         self.update_card_not_owned(self.players_list, item)
         return
@@ -89,9 +107,9 @@ class CluedoGame:
             if item in list_: list_.remove(item)
 
     def accusation(self):
-        character = self.input_in_items("Which character?")
-        weapon = self.input_in_items("Which weapon?")
-        room = self.input_in_items("Which room?")
+        character = self.input_in_list("Which character?", type="characters")
+        weapon = self.input_in_list("Which weapon?", type="weapons")
+        room = self.input_in_list("Which room?", type="rooms")
         return [character, weapon, room]
 
     def players_not_showing(self, player_asking, player_showing):
@@ -111,6 +129,10 @@ class CluedoGame:
         return
 
     def update_card_owned(self, player_showing, card_showed):
+        # Not to proceed further if information about the player is complete
+        if self.all_cards_known(player=player_showing):
+            return
+
         if type(card_showed) == str: card_showed = [card_showed]
         if type(card_showed) == list: card_showed = card_showed
         # To remove from the process any card which cannot be owned
@@ -119,10 +141,10 @@ class CluedoGame:
                 card_showed.remove(item)
         # Not to repeat card already added
         if card_showed in self.cards_owned[player_showing]:
-            return  # TO CHECK: AIM IS TO EXIT THE FUNCTION
+            return
         # Not to overwrite cards already determined
         n = 0
-        while len(self.cards_owned[player_showing][n]) == 1:
+        while self.cards_owned[player_showing][n]:
             n = n + 1
         for card in card_showed:
             self.cards_owned[player_showing][n].append(card)
@@ -137,61 +159,35 @@ class CluedoGame:
                     # If only one card remains, it is certain by construction
                     if len(slot) == 1:
                         if card in self.suspects:
+                            print("Here")
                             self.remove_from_suspects(card)
                             self.update_card_not_owned(self.players_list, card,
                                                        player_excl=player)
+                    # Check not to be left with duplicates
+                    if slot != []:
+                        while self.cards_owned[player].count(slot) > 1:
+                            self.cards_owned[player].remove(slot)
+                            self.cards_owned[player].append([])
 
     # 3) UTILITIES: Functions propedeutic to the functioning of the main ones
-    def input_in_items(self, text):
+    def input_in_list(self, text, type, accusation_list=None):
         text = text + " "
         player_input = input(text).title()
-        while player_input not in self.items:
+        type = type.lower()
+        ref_list = {"characters" : self.characters, "weapons" : self.weapons,
+                    "rooms" : self.rooms, "players" : self.players_list,
+                    "accusation" : accusation_list, "items" : self.items}
+        while player_input not in ref_list[type]:
             help_word = "list"
             if player_input != help_word.title():
                 print("Something went wrong. What you typed does not appear "
-                      "among the items of the game. Please retry. If you would "
+                      f"among the {type}. Please retry. If you would "
                       "like to see the list of items of the game type "
                       f"'{help_word}'.\n")
             player_input = input(text).title()
             if player_input == help_word.title():
-                print("These are the characters:")
-                print(*self.characters, sep=", ")
-                print("\nThese are the weapons:")
-                print(*self.weapons, sep=", ")
-                print("\nThese are the rooms:")
-                print(*self.rooms, sep=", ")
-        return player_input
-
-    def input_in_players(self, text):
-        text = text + " "
-        player_input = input(text).title()
-        while player_input not in self.players_list:
-            help_word = "list"
-            if player_input != help_word.title():
-                print("Something went wrong. What you typed does not appear "
-                      "among the players in the game. Please retry. If you would "
-                      "like to see the list of players in the game type "
-                      f"'{help_word}'.\n")
-            player_input = input(text).title()
-            if player_input == help_word.title():
-                print("These are the players:")
-                print(*self.players_list, sep=", ")
-        return player_input
-
-    def input_in_accusation(self, accusation_list, text):
-        text = text + " "
-        player_input = input(text).title()
-        while player_input not in accusation_list:
-            help_word = "list"
-            if player_input != help_word.title():
-                print("Something went wrong. What you typed does not appear "
-                      "among the items of the accusation. Please retry. If you "
-                      "like to see the items in the accusation type "
-                      f"'{help_word}'.\n")
-            player_input = input(text).title()
-            if player_input == help_word.title():
-                print("These are the items in the accusation:")
-                print(*accusation_list, sep=", ")
+                print(f"These are the {type}:")
+                print(*ref_list[type], sep=", ")
         return player_input
 
     def disp_guessings_probab(self):
@@ -212,6 +208,19 @@ class CluedoGame:
             print(f"The probability of randomly guessing is: {prob_guessing}")
         return
 
+    def all_cards_known(self, player):
+        '''
+        Check if all the information is known about one player
+        '''
+        counter = 0
+        for slot in self.cards_owned[player]:
+            if len(slot) == 1:
+                counter = counter + 1
+        if counter == 3:
+            return True
+        else:
+            return False
+
     def players_order(self):
         player_position = None
         while player_position not in range(1, self.players_number + 1):
@@ -229,15 +238,6 @@ class CluedoGame:
             self.cards_owned[player] = [[], [], []]
             self.cards_not_owned[player] = []
         return
-
-    def go_to_next_player(self, index):
-        while (index - self.players_number) >= -1:
-            index = index - self.players_number
-        index = index + 1
-        if index not in range(0, self.players_number):
-            print("Beware, the index is out of range given the number of "
-                  "players! An error will occur")
-        return index
 
 
 # To test what was done up to now
