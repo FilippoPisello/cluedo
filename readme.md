@@ -1,4 +1,10 @@
 # AIM OF THE PROJECT
+[Cluedo](https://en.wikipedia.org/wiki/Cluedo) is a popular board game. The
+object of the game is to determine who murdered the game's victim, where and
+which weapon was used. Each player attempts to deduce the correct answer by
+strategically moving around a game board and collecting clues about the
+circumstances of the murder from the other players.
+
 The aim of the project is to create the perfect Cluedo player, who extracts all
 the possible information from the ongoing game, delivering the solution as soon
 as it is logically possible.
@@ -6,7 +12,7 @@ as it is logically possible.
 The initial idea is to realize an algorithm which can be fed up with the events
 of the game in the simplest way possible, making its way towards the solution.
 
-Python-wise, this project is a way for me to explore the object-oriented 
+Python-wise, this project is a way for me to explore the object-oriented
 programming which I rarely use while performing data analysis.
 
 ## V 0.0
