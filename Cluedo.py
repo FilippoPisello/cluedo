@@ -9,7 +9,7 @@ class CluedoGame:
         self.cards_owned = {}
         self.characters = ['Green', 'Mustard', 'Peacock', 'Plum', 'Scarlet',
                            'White']
-        self.weapons = ['Axe', 'Baseball bat', 'Chandelier', 'Dumbell', 'Knife',
+        self.weapons = ['Axe', 'Baseball Bat', 'Chandelier', 'Dumbell', 'Knife',
                         'Pistol', 'Poison', 'Rope', 'Trophy']
         self.rooms = ['Dining Room', 'Guest House', 'Hall', 'Kitchen',
                       'Living Room', 'Observatory', 'Patio', 'Spa', 'Theatre']
@@ -45,6 +45,13 @@ class CluedoGame:
                                                player_excl=player_showed)
 
                     self.update_card_owned(player_showed, card_showed)
+                    print("CARDS OWNED")
+                    print(self.cards_owned)  # TO BE REMOVED
+                    print("CARDS NOT OWNED")
+                    print(self.cards_not_owned)  # TO BE REMOVED
+                    print("SUSPECTS")
+                    print(self.suspects)
+                    print()
                     self.interact_information()
                     self.disp_guessings_probab()
 
@@ -57,6 +64,13 @@ class CluedoGame:
                     print()
                 else:
                     self.update_card_owned(player_showed, accusation)
+                    print("OWNED")
+                    print(self.cards_owned)  # TO BE REMOVED
+                    print("CARDS NOT OWNED")
+                    print(self.cards_not_owned)  # TO BE REMOVED
+                    print("SUSPECTS")
+                    print(self.suspects)
+                    print()
                     self.interact_information()
                     self.disp_guessings_probab()
 
@@ -68,10 +82,13 @@ class CluedoGame:
                     print(self.suspects)
                     print()
             else:
-                pass
+                pass  # if no accusation go directly to the next player
 
             # Go to next player
             player = (player + 1) % self.players_number
+
+        # If probability is 1, the game is solved
+        self.disp_guessings_probab()
 
     # 2) GAME DYNAMICS: functions capturing specific dynamics of the game
     def game_start(self):
@@ -89,11 +106,11 @@ class CluedoGame:
             self.cards_owned["You"][counter].append(item)
             self.update_card_not_owned(self.players_list, item,
                                        player_excl="You")
-
+        print("OWNED")
         print(self.cards_owned)  # TO BE REMOVED
-        print()
+        print("CARDS NOT OWNED")
         print(self.cards_not_owned)  # TO BE REMOVED
-        print()
+        print("SUSPECTS")
         print(self.suspects)
         self.disp_guessings_probab()
         return
@@ -163,21 +180,30 @@ class CluedoGame:
                     item = slot[0]
                     if item in (self.suspects[0] or self.suspects[1]
                                 or self.suspects[2]):
-                        print("\n!!!!!!!\n")  # TO REMOVE
                         self.remove_from_suspects(item)
                         self.update_card_not_owned(self.players_list, item,
                                                    player_excl=player)
-                # Check not to be left with duplicates
+                    # Remove slots with less info than the ones of lenght 1
+                    for slot in self.cards_owned[player]:
+                        if item in slot and len(slot) > 1:
+                            slot.clear()
+                # Check not to be left with duplicates of lenght one
                 if slot != []:
                     while self.cards_owned[player].count(slot) > 1:
                         self.cards_owned[player].remove(slot)
                         self.cards_owned[player].append([])
+        # Repeat the updating with the most recent information
+        for player in self.players_list:
+            for slot in self.cards_owned[player]:
+                for card in slot:
+                    if card in self.cards_not_owned[player]:
+                        slot.remove(card)
 
     # 3) UTILITIES: Functions propedeutic to the functioning of the main ones
     def input_in_list(self, text, type, accusation_list=None):
         text = text + " "
         player_input = input(text).title()
-        type = type.lower()
+        type = type.lower()  # to capture capitaliztion erros in the code
         ref_list = {"characters" : self.characters, "weapons" : self.weapons,
                     "rooms" : self.rooms, "players" : self.players_list,
                     "accusation" : accusation_list, "items" : self.items}
