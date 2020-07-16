@@ -15,6 +15,60 @@ of the game in the simplest way possible, making its way towards the solution.
 Python-wise, this project is a way for me to explore the object-oriented
 programming which I rarely use while performing data analysis.
 
+## V 0.8
+### Algorithm's structure
+1. Start the game:
+    1. Define the players' order
+    1. Add all the cards to the suspects
+    1. Intake the cards taken from the USER
+        1. Remove them from the suspects
+        1. Register the fact that USER owns them
+        1. Register the fact that the other players do not own them
+1. As long as there is more than one element for at least one of the three
+suspects' groups (characters, weapons, rooms), start the turn of one of the
+players:
+    1. Ask if an accusation was made:
+        1. If no:
+            - Go to next player
+        1. If yes:
+            1. Register which character, weapon and room were included in the
+            accusation
+            1. Register that PLAYER X showed the cards
+            1. Deduce which players did not show any card
+                1. Register the fact that they do not own all the cards included
+                in the accusation
+            1. If the player is USER:
+                1. Register which card was shown
+                    1. Remove it from the suspects
+                    1. Register the fact that PLAYER X owns it
+                    1. Register the fact that the other players do not own it
+            1. If the player is not USER:
+                1. Remove from the accusation the cards that PLAYER X does
+                not own.
+                1. Register that one of the cards of PLAYER X is one of the
+                cards of the remaining cards of the accusation. This happens
+                adding a list of items instead of a single element.
+        1. Make logical deductions with the information in possess:
+            1. For each player, check if any of the cards stored as potentially owned turned out not to be in possess of that player. In this case,
+            remove it from the cards owned.
+            1. If doing this any of the doubtful slots, thus containing a list,
+            turn into sure slots, thus containing a single element:
+                1. Remove that card from the suspects
+                1. Register that all the other players do not own it
+            1. Check if among the slots with multiple elements there are any
+            which contain cards which turned out to be true:
+                1. In that case, reset the doubtful slot since it contains
+                redundant information
+            1. Check if there are duplicates among the slot:
+                1. If any, reset to empty the redundant ones.
+            1. Run for safety the initial check
+    1. Go to the next player
+1. The official accusation to be made is certain, display it to the user
+
+### To be implemented
+1. Card revealed
+1. Cards owned by the table
+
 ## V 0.0
 ### Preliminary reasoning on the game structure
 From the perspective of a single player (A)
