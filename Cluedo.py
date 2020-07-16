@@ -45,46 +45,31 @@ class CluedoGame:
                                                player_excl=player_showed)
 
                     self.update_card_owned(player_showed, card_showed)
-                    print("CARDS OWNED")
-                    print(self.cards_owned)  # TO BE REMOVED
-                    print("CARDS NOT OWNED")
-                    print(self.cards_not_owned)  # TO BE REMOVED
-                    print("SUSPECTS")
-                    print(self.suspects)
-                    print()
-                    self.interact_information()
-                    self.disp_guessings_probab()
 
-                    print("CARDS OWNED")
-                    print(self.cards_owned)  # TO BE REMOVED
-                    print("CARDS NOT OWNED")
-                    print(self.cards_not_owned)  # TO BE REMOVED
-                    print("SUSPECTS")
-                    print(self.suspects)
-                    print()
                 else:
                     self.update_card_owned(player_showed, accusation)
-                    print("OWNED")
-                    print(self.cards_owned)  # TO BE REMOVED
-                    print("CARDS NOT OWNED")
-                    print(self.cards_not_owned)  # TO BE REMOVED
-                    print("SUSPECTS")
-                    print(self.suspects)
-                    print()
-                    self.interact_information()
-                    self.disp_guessings_probab()
 
-                    print("CARDS OWNED")
-                    print(self.cards_owned)  # TO BE REMOVED
-                    print("CARDS NOT OWNED")
-                    print(self.cards_not_owned)  # TO BE REMOVED
-                    print("SUSPECTS")
-                    print(self.suspects)
-                    print()
+                print("CARDS OWNED")
+                print(self.cards_owned)  # TO BE REMOVED
+                print("CARDS NOT OWNED")
+                print(self.cards_not_owned)  # TO BE REMOVED
+                print("SUSPECTS")
+                print(self.suspects)
+                print()
+                self.interact_information()
+                self.disp_guessings_probab()
+
+                print("CARDS OWNED")
+                print(self.cards_owned)  # TO BE REMOVED
+                print("CARDS NOT OWNED")
+                print(self.cards_not_owned)  # TO BE REMOVED
+                print("SUSPECTS")
+                print(self.suspects)
+                print()
             else:
-                pass  # if no accusation go directly to the next player
+                pass  # if no accusation, go directly to the next player
 
-            # Go to next player
+            # Go to the next player
             player = (player + 1) % self.players_number
 
         # If probability is 1, the game is solved
