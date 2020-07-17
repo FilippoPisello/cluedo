@@ -23,12 +23,13 @@ class CluedoGame:
     def main(self):
         self.game_start()
         player = 0
-        yes_answers = ["Yes", "yes", "Y", "y", 1, "1"]
 
         while self.prob_guessing != 1:
-            action = input(f"Did {self.players_list[player].lower()} make "
-                           "an accusation? ")
-            if action in yes_answers:
+            text_disp = (f"It's the turn of {self.players_list[player].lower()}. "
+                         "Enter 1 if he/she made an accusation, 2 if he/she did"
+                         " not. Enter 3 if a card from the table was revealed. ")
+            action = self.input_in_list(text=text_disp, type="actions")
+            if action == "1":
                 accusation = self.accusation()  # List of three items
                 player_showed = self.input_in_list("Which player showed the "
                                                    "card?", type="players")
@@ -66,11 +67,13 @@ class CluedoGame:
                 print("SUSPECTS")
                 print(self.suspects)
                 print()
-            else:
-                pass  # if no accusation, go directly to the next player
 
-            # Go to the next player
-            player = (player + 1) % self.players_number
+            if action == "1" or action == "2":
+                # Go to the next player
+                player = (player + 1) % self.players_number
+
+            if action == "3":
+                self.card_revealed()
 
         # If probability is 1, the game is solved
         self.disp_guessings_probab()
@@ -163,11 +166,10 @@ class CluedoGame:
                 # If only one card remains, it is certain by construction
                 if len(slot) == 1:
                     item = slot[0]
-                    if item in (self.suspects[0] or self.suspects[1]
-                                or self.suspects[2]):
-                        self.remove_from_suspects(item)
-                        self.update_card_not_owned(self.players_list, item,
-                                                   player_excl=player)
+                    print(player, slot, item)
+                    self.remove_from_suspects(item)
+                    self.update_card_not_owned(self.players_list, item,
+                                               player_excl=player)
                     # Remove slots with less info than the ones of lenght 1
                     for slot in self.cards_owned[player]:
                         if item in slot and len(slot) > 1:
@@ -191,7 +193,8 @@ class CluedoGame:
         type = type.lower()  # to capture capitaliztion erros in the code
         ref_list = {"characters" : self.characters, "weapons" : self.weapons,
                     "rooms" : self.rooms, "players" : self.players_list,
-                    "accusation" : accusation_list, "items" : self.items}
+                    "accusation" : accusation_list, "items" : self.items,
+                    "actions" : ["1", "2", "3"]}
         while player_input not in ref_list[type]:
             help_word = "list"
             if player_input != help_word.title():
