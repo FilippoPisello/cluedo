@@ -27,10 +27,9 @@ programming which I rarely use while performing data analysis.
 1. As long as there is more than one element for at least one of the three
 suspects' groups (characters, weapons, rooms), start the turn of one of the
 players:
-    1. Ask if an accusation was made:
-        1. If no:
-            - Go to next player
-        1. If yes:
+    1. Ask (1) if an accusation was made, (2) if it was not, (3) if a card was
+    revealed:
+        1. If (1):
             1. Register which character, weapon and room were included in the
             accusation
             1. Register that PLAYER X showed the cards
@@ -48,26 +47,30 @@ players:
                 1. Register that one of the cards of PLAYER X is one of the
                 cards of the remaining cards of the accusation. This happens
                 adding a list of items instead of a single element.
-        1. Make logical deductions with the information in possess:
-            1. For each player, check if any of the cards stored as potentially owned turned out not to be in possess of that player. In this case,
-            remove it from the cards owned.
-            1. If doing this any of the doubtful slots, thus containing a list,
-            turn into sure slots, thus containing a single element:
-                1. Remove that card from the suspects
-                1. Register that all the other players do not own it
-            1. Check if among the slots with multiple elements there are any
-            which contain cards which turned out to be true:
-                1. In that case, reset the doubtful slot since it contains
-                redundant information
-            1. Check if there are duplicates among the slot:
-                1. If any, reset to empty the redundant ones.
+            1. Make logical deductions with the information in possess:
+                1. For each player, check if any of the cards stored as potentially owned turned out not to be in possess of that player. In this case,
+                remove it from the cards owned.
+                1. If doing this any of the doubtful slots, thus containing a list,
+                turn into sure slots, thus containing a single element:
+                    1. Remove that card from the suspects
+                    1. Register that all the other players do not own it
+                1. Check if among the slots with multiple elements there are any
+                which contain cards which turned out to be true:
+                    1. In that case, reset the doubtful slot since it contains
+                    redundant information
+                1. Check if there are duplicates among the slot:
+                    1. If any, reset to empty the redundant ones.
             1. Run for safety the initial check
+        1. If (2):
+            - Go to next player
+        1. If (3):
+            1. Remove the revealed card from the suspects
+            1. Register the fact that nobody owns it
     1. Go to the next player
 1. The official accusation to be made is certain, display it to the user
 
 ### To be implemented
-1. Card revealed
-1. Cards owned by the table
+1. Cards owned by the table (?) still to be decided
 
 ## V 0.0
 ### Preliminary reasoning on the game structure
