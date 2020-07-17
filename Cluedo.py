@@ -26,8 +26,9 @@ class CluedoGame:
 
         while self.prob_guessing != 1:
             text_disp = (f"It's the turn of {self.players_list[player].lower()}. "
-                         "Enter 1 if he/she made an accusation, 2 if he/she did"
-                         " not. Enter 3 if a card from the table was revealed. ")
+                         "Enter:\n1 if he/she made an accusation \n2 if he/she "
+                         "did not make an accusation \n3 if a card from the "
+                         "table was revealed.\n")
             action = self.input_in_list(text=text_disp, type="actions")
             if action == "1":
                 accusation = self.accusation()  # List of three items
@@ -166,7 +167,6 @@ class CluedoGame:
                 # If only one card remains, it is certain by construction
                 if len(slot) == 1:
                     item = slot[0]
-                    print(player, slot, item)
                     self.remove_from_suspects(item)
                     self.update_card_not_owned(self.players_list, item,
                                                player_excl=player)
@@ -248,12 +248,13 @@ class CluedoGame:
                                         f"{self.players_number}. "))
             if player_position not in range(1, self.players_number + 1):
                 print("The value you provided is not accepted, please retry.")
-        for number in range(1, self.players_number + 1):
-            self.players_list.append(f"Player {number}")
+
+        self.players_list = [f"Player {i}"
+                             for i in range(1, self.players_number + 1)]
         self.players_list[player_position - 1] = "You"
 
         for player in self.players_list:
-            self.cards_owned[player] = [[], [], []]
+            self.cards_owned[player] = [[] for i in range(self.cards_per_person)]
             self.cards_not_owned[player] = []
         return
 
