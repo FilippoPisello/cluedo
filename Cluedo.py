@@ -16,7 +16,7 @@ class CluedoGame:
         self.items = self.characters + self.weapons + self.rooms
         self.cards_per_person = (len(self.items) - 3) // self.players_number
         self.cards_to_players = self.cards_per_person * self.players_number
-        self.cards_on_table = len(self.items) - self.cards_to_players
+        self.cards_on_table = []
         self.prob_guessing = 0
 
     # 1) MAIN: Regulating the alternation of the various game phases
@@ -81,7 +81,9 @@ class CluedoGame:
 
     # 2) GAME DYNAMICS: functions capturing specific dynamics of the game
     def game_start(self):
-        self.players_order()
+        self.create_players_list()
+        self.create_cards_owned_list()
+        print(self.cards_on_table)
         self.suspects = [self.characters.copy(),
                          self.weapons.copy(),
                          self.rooms.copy()]
@@ -108,6 +110,16 @@ class CluedoGame:
         item = self.input_in_list("Which card was revealed?", type="items")
         self.remove_from_suspects(item)
         self.update_card_not_owned(self.players_list, item)
+        n = 0
+        while self.cards_on_table[n]:
+            n = n + 1
+        # To prevent the triggering of an error by choosing the wrong input
+        if n >= len(self.cards_on_table) - 1:
+            print("It looks like all the cards on the table had already been"
+                  "revealed, please retry.\n")
+            return
+        self.cards_on_table[n].append(item)
+        print(self.cards_on_table)
         return
 
     def remove_from_suspects(self, item):
@@ -147,7 +159,7 @@ class CluedoGame:
         for item in card_showed:
             if item in self.cards_not_owned[player_showing]:
                 card_showed.remove(item)
-        # Not to repeat card already added
+        # Not to repeat cards already added
         if card_showed in self.cards_owned[player_showing]:
             return
         # Not to overwrite cards already determined
@@ -239,7 +251,7 @@ class CluedoGame:
         else:
             return False
 
-    def players_order(self):
+    def create_players_list(self):
         player_position = None
         while player_position not in range(1, self.players_number + 1):
             player_position = int(input("What is your position in the turn? "
@@ -253,9 +265,15 @@ class CluedoGame:
                              for i in range(1, self.players_number + 1)]
         self.players_list[player_position - 1] = "You"
 
+        return
+
+    def create_cards_owned_list(self):
         for player in self.players_list:
             self.cards_owned[player] = [[] for i in range(self.cards_per_person)]
             self.cards_not_owned[player] = []
+
+        self.cards_on_table = [[] for i in range(len(self.items)
+                                                 - self.cards_to_players - 3)]
         return
 
 
