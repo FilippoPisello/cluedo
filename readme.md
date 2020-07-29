@@ -15,7 +15,7 @@ of the game in the simplest way possible, making its way towards the solution.
 Python-wise, this project is a way for me to explore the object-oriented
 programming which I rarely use while performing data analysis.
 
-## V 0.8
+## V 1.0
 ### Algorithm's structure
 1. Start the game:
     1. Define the players' order
@@ -66,11 +66,18 @@ players:
         1. If (3):
             1. Remove the revealed card from the suspects
             1. Register the fact that nobody owns it
+            1. Register that the table owns it
     1. Go to the next player
 1. The official accusation to be made is certain, display it to the user
 
-### To be implemented
-1. Cards owned by the table (?) still to be decided
+### Potential further developments
+- Create an autosave mechanisms which stores the relevant information of the
+current game (cards not owned, cards owned, players, turns) and make possible
+to load the save file. In this way, if the program suddenly breaks, one can
+resume from where it left, potentially fixing manually any error.
+- Introduce the possibility of modifying previous inputs so that if one chooses
+the wrong option it can recover.
+- Create a GUI (Graphical User Interface) for the program.
 
 ## V 0.0
 ### Preliminary reasoning on the game structure
