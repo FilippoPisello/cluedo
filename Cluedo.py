@@ -7,15 +7,15 @@ from components.suspects import Suspects
 from components.player import Player
 from components.board import Board
 from components.accusation import Accusation
+from components.players import Players
 
 import components.inputs as inputs
 import components.utilities as utilities
 
 
 class CluedoGame:
-    def __init__(self, players_number=6, nerd_mode=True):
+    def __init__(self, players_number=6):
         self.players_number = players_number
-        self.nerd_mode = nerd_mode
 
         self.cards = Cards(cn.CHARACTERS, cn.WEAPONS, cn.ROOMS)
 
@@ -27,25 +27,27 @@ class CluedoGame:
         self.suspects = Suspects(cn.CHARACTERS, cn.WEAPONS, cn.ROOMS)
         self.board = Board(self.cards_on_board)
 
-        self.players = {}  # dict of type {str : Player object}
-        self.active_player = None
+        self.players: Players = None
 
     # 1) MAIN: Regulating the alternation of the various game phases
     def main(self):
         self.initiate_game()
+        self.display_game_info()
 
         while self.suspects.guessing_probability < 1:
-            action = inputs.get_user_action(self.active_player.name)
+            action = inputs.get_user_action(self.players.active.name)
 
             if action == "1":
                 self.accusation_made_event()
+                self.display_game_info()
 
             if action == "1" or action == "2":
                 # Go to the next player
-                self.active_player = self.next_player()
+                self.players.make_next_player_active()
 
             if action == "3":
                 self.card_revealed_event()
+                self.display_game_info()
 
         # If probability is 1, the game is solved
         self.suspects.display_guessing_probability_message()
@@ -56,29 +58,17 @@ class CluedoGame:
     def initiate_game(self):
         """Set up a new game getting all the required items ready"""
         self.initiate_players()
-        self.active_player = self.player_by_index(0)
         self.register_users_cards()
         return
 
     def initiate_players(self):
-        """Create a list of players"""
+        """Create the list of players"""
         user_position = inputs.get_user_position(self.players_number)
 
-        player_names = self.create_players_labels(user_position)
-
-        self.players = {
-            name: Player(name, self.cards_per_person) for name in player_names
-        }
+        self.players = Players(
+            self.players_number, self.cards_per_person, user_position
+        )
         return
-
-    def create_players_labels(
-        self, user_position: int, user_label: str = "You"
-    ) -> list[str]:
-        """Returns list of players labels"""
-        return [
-            f"Player {i}" if i != user_position else user_label
-            for i in range(1, self.players_number + 1)
-        ]
 
     def register_users_cards(self) -> None:
         """Register the fact that users owns its initial cards."""
@@ -88,8 +78,11 @@ class CluedoGame:
 
         self.suspects.remove_multiple_from_suspects(user_owned_cards)
 
+        for card in user_owned_cards:
+            self.update_card_owned(card, self.players.get_player_by_name("You"))
+
         self.update_card_not_owned(
-            user_owned_cards, self.players, player_excluded="You"
+            user_owned_cards, self.players.list, player_excluded="You"
         )
 
     # --------------------------------------------------------------------------
@@ -97,21 +90,18 @@ class CluedoGame:
     # --------------------------------------------------------------------------
     def accusation_made_event(self):
         """Handle the entire event of an accusation being made"""
-        accusation_list = inputs.get_accusation(
-            self.cards.characters, self.cards.weapons, self.cards.rooms
-        )
+        cs, wp, rm = self.cards.characters, self.cards.weapons, self.cards.rooms
+        accusation_list = inputs.get_accusation(cs, wp, rm)
         accusation = Accusation.from_list(accusation_list)
 
-        player_showed = inputs.input_in_list(
-            "Which player showed the card?", self.players.keys()
-        )
-        player_showed = self.players[player_showed]
+        player_showed_name = inputs.get_player_who_showed(self.players.names)
+        player_showed = self.players.get_player_by_name(player_showed_name)
 
-        players_passing = self.players_not_showing(player_showed)
+        players_passing = self.players.range_of_players(player_showed)
         self.update_card_not_owned(accusation.items_set, players_passing)
 
         # Distinguishing the actions between "You" and the other players
-        if self.active_player.name == "You":
+        if self.players.active.name == "You":
             card_showed = inputs.get_card_from_accusation(accusation.items_list)
 
             self.suspects.remove_one_from_suspects(card_showed)
@@ -123,12 +113,6 @@ class CluedoGame:
 
         else:
             self.update_card_owned(player_showed, accusation.items_list)
-
-    def players_not_showing(self, player_showing: Player) -> list[Player]:
-        """Return list of players between active player and player showing"""
-        start = self.players.index(self.active_player.name) + 1
-        end = self.players.index(player_showing.name) + 1
-        return [self.players[key] for key in self.players.keys()[start:end]]
 
     def update_card_not_owned(
         self,
@@ -147,7 +131,7 @@ class CluedoGame:
         self, card_input: Union[str, list], player_to_update: Player
     ) -> None:
         # Not to proceed further if information about the player is complete
-        if player_to_update.all_cards_known():
+        if player_to_update.all_cards_known:
             return
 
         card_input_as_set = utilities.input_to_set(card_input)
@@ -155,7 +139,7 @@ class CluedoGame:
         player_to_update.add_cards_owned(card_input_as_set)
 
     # --------------------------------------------------------------------------
-    # ACCUSATION HANDLING
+    # CARD REVEALED HANDLING
     # --------------------------------------------------------------------------
     def card_revealed_event(self) -> None:
         """Handles the complete event of a card being revealed"""
@@ -177,17 +161,16 @@ class CluedoGame:
         self.board.add_card(revealed_card)
 
     # --------------------------------------------------------------------------
-    # OTHER
+    # INFORMATION DISPLAY
     # --------------------------------------------------------------------------
-    def player_by_index(self, index: int) -> Player:
-        """Return the nth player in the players dictionary"""
-        return self.players[self.players.keys()[index]]
-
-    def next_player(self) -> Player:
-        """Returns the new active player"""
-        current_player_index = self.players.keys().index(self.active_player.name)
-        new_index = (current_player_index + 1) % self.players_number
-        return self.player_by_index(new_index)
+    def display_game_info(self):
+        print("########################### SUSPECTS")
+        print(self.suspects)
+        print("########################### PLAYERS INFO")
+        self.players.display_players_info()
+        print("########################### BOARD")
+        print(self.board)
+        print()
 
 
 if __name__ == "__main__":
