@@ -1,283 +1,197 @@
+from typing import Union
+
+import constants.defaults as cn
+
+from components.cards import Cards
+from components.suspects import Suspects
+from components.player import Player
+from components.board import Board
+from components.accusation import Accusation
+
+import components.inputs as inputs
+import components.utilities as utilities
+
 
 class CluedoGame:
     def __init__(self, players_number=6, nerd_mode=True):
         self.players_number = players_number
-        self.players_list = []
         self.nerd_mode = nerd_mode
-        self.suspects = []
-        self.cards_not_owned = {}
-        self.cards_owned = {}
-        self.characters = ['Green', 'Mustard', 'Peacock', 'Plum', 'Scarlet',
-                           'White']
-        self.weapons = ['Axe', 'Baseball Bat', 'Chandelier', 'Dumbell', 'Knife',
-                        'Pistol', 'Poison', 'Rope', 'Trophy']
-        self.rooms = ['Dining Room', 'Guest House', 'Hall', 'Kitchen',
-                      'Living Room', 'Observatory', 'Patio', 'Spa', 'Theatre']
-        self.items = self.characters + self.weapons + self.rooms
-        self.cards_per_person = (len(self.items) - 3) // self.players_number
+
+        self.cards = Cards(cn.CHARACTERS, cn.WEAPONS, cn.ROOMS)
+
+        # 3 are the cards to be guessed
+        self.cards_per_person = (self.cards.number - 3) // self.players_number
         self.cards_to_players = self.cards_per_person * self.players_number
-        self.cards_on_table = []
-        self.prob_guessing = 0
+        self.cards_on_board = self.cards.number - self.cards_to_players - 3
+
+        self.suspects = Suspects(cn.CHARACTERS, cn.WEAPONS, cn.ROOMS)
+        self.board = Board(self.cards_on_board)
+
+        self.players = {}  # dict of type {str : Player object}
+        self.active_player = None
 
     # 1) MAIN: Regulating the alternation of the various game phases
     def main(self):
-        self.game_start()
-        player = 0
+        self.initiate_game()
 
-        while self.prob_guessing != 1:
-            text_disp = (f"It's the turn of {self.players_list[player].lower()}. "
-                         "Enter:\n1 if he/she made an accusation \n2 if he/she "
-                         "did not make an accusation \n3 if a card from the "
-                         "table was revealed.\n")
-            action = self.input_in_list(text=text_disp, type="actions")
+        while self.suspects.guessing_probability < 1:
+            action = inputs.get_user_action(self.active_player.name)
+
             if action == "1":
-                accusation = self.accusation()  # List of three items
-                player_showed = self.input_in_list("Which player showed the "
-                                                   "card?", type="players")
-                players_passing = self.players_not_showing(self.players_list[player],
-                                                           player_showed)
-                self.update_card_not_owned(players_passing, accusation)
-                # Distinguisihing the actions between "You" and the other players
-                if self.players_list[player] == "You":
-                    card_showed = self.input_in_list("Which card was shown to you?",
-                                                     type="accusation",
-                                                     accusation_list=accusation)
-                    self.remove_from_suspects(card_showed)
-                    self.update_card_not_owned(self.players_list, card_showed,
-                                               player_excl=player_showed)
-
-                    self.update_card_owned(player_showed, card_showed)
-
-                else:
-                    self.update_card_owned(player_showed, accusation)
-
-                print("CARDS OWNED")
-                print(self.cards_owned)  # TO BE REMOVED
-                print("CARDS NOT OWNED")
-                print(self.cards_not_owned)  # TO BE REMOVED
-                print("SUSPECTS")
-                print(self.suspects)
-                print()
-                self.interact_information()
-                self.disp_guessings_probab()
-
-                print("CARDS OWNED")
-                print(self.cards_owned)  # TO BE REMOVED
-                print("CARDS NOT OWNED")
-                print(self.cards_not_owned)  # TO BE REMOVED
-                print("SUSPECTS")
-                print(self.suspects)
-                print()
+                self.accusation_made_event()
 
             if action == "1" or action == "2":
                 # Go to the next player
-                player = (player + 1) % self.players_number
+                self.active_player = self.next_player()
 
             if action == "3":
-                self.card_revealed()
+                self.card_revealed_event()
 
         # If probability is 1, the game is solved
-        self.disp_guessings_probab()
+        self.suspects.display_guessing_probability_message()
 
-    # 2) GAME DYNAMICS: functions capturing specific dynamics of the game
-    def game_start(self):
-        self.create_players_list()
-        self.create_cards_owned_list()
-        print(self.cards_on_table)
-        self.suspects = [self.characters.copy(),
-                         self.weapons.copy(),
-                         self.rooms.copy()]
-        for counter in range(self.cards_per_person):
-            order = ["first", "second", "third", "fourth", "fifth", "sixth"
-                     "seventh", "eighth", "ninth", "tenth"]
-            card_number = order[counter]
-            item = self.input_in_list(f"Please insert your {card_number} card",
-                                      type="items")
-            self.remove_from_suspects(item)
-            self.cards_owned["You"][counter].append(item)
-            self.update_card_not_owned(self.players_list, item,
-                                       player_excl="You")
-        print("OWNED")
-        print(self.cards_owned)  # TO BE REMOVED
-        print("CARDS NOT OWNED")
-        print(self.cards_not_owned)  # TO BE REMOVED
-        print("SUSPECTS")
-        print(self.suspects)
-        self.disp_guessings_probab()
+    # --------------------------------------------------------------------------
+    # GAME SET UP
+    # --------------------------------------------------------------------------
+    def initiate_game(self):
+        """Set up a new game getting all the required items ready"""
+        self.initiate_players()
+        self.active_player = self.player_by_index(0)
+        self.register_users_cards()
         return
 
-    def card_revealed(self):
-        item = self.input_in_list("Which card was revealed?", type="items")
-        self.remove_from_suspects(item)
-        self.update_card_not_owned(self.players_list, item)
-        n = 0
-        while self.cards_on_table[n]:
-            n = n + 1
-        # To prevent the triggering of an error by choosing the wrong input
-        if n >= len(self.cards_on_table) - 1:
-            print("It looks like all the cards on the table had already been"
-                  "revealed, please retry.\n")
-            return
-        self.cards_on_table[n].append(item)
-        print(self.cards_on_table)
+    def initiate_players(self):
+        """Create a list of players"""
+        user_position = inputs.get_user_position(self.players_number)
+
+        player_names = self.create_players_labels(user_position)
+
+        self.players = {
+            name: Player(name, self.cards_per_person) for name in player_names
+        }
         return
 
-    def remove_from_suspects(self, item):
-        for list_ in self.suspects:
-            if item in list_: list_.remove(item)
+    def create_players_labels(
+        self, user_position: int, user_label: str = "You"
+    ) -> list[str]:
+        """Returns list of players labels"""
+        return [
+            f"Player {i}" if i != user_position else user_label
+            for i in range(1, self.players_number + 1)
+        ]
 
-    def accusation(self):
-        character = self.input_in_list("Which character?", type="characters")
-        weapon = self.input_in_list("Which weapon?", type="weapons")
-        room = self.input_in_list("Which room?", type="rooms")
-        return [character, weapon, room]
+    def register_users_cards(self) -> None:
+        """Register the fact that users owns its initial cards."""
+        user_owned_cards = inputs.get_users_cards(
+            self.cards_per_person, self.cards.all_cards
+        )
 
-    def players_not_showing(self, player_asking, player_showing):
-        start_position = self.players_list.index(player_asking)
-        end_position = self.players_list.index(player_showing)
-        return self.players_list[start_position + 1 : end_position]
+        self.suspects.remove_multiple_from_suspects(user_owned_cards)
 
-    def update_card_not_owned(self, players_list, card_input, player_excl=None):
-        if type(card_input) == str: card_input = [card_input]
-        if type(card_input) == list: card_input = card_input
-        for card in card_input:
-            for player in players_list:
-                if player != player_excl:
-                    # Not to repeat the card
-                    if card not in self.cards_not_owned[player]:
-                        self.cards_not_owned[player].append(card)
-        return
+        self.update_card_not_owned(
+            user_owned_cards, self.players, player_excluded="You"
+        )
 
-    def update_card_owned(self, player_showing, card_showed):
-        # Not to proceed further if information about the player is complete
-        if self.all_cards_known(player=player_showing):
-            return
+    # --------------------------------------------------------------------------
+    # ACCUSATION HANDLING
+    # --------------------------------------------------------------------------
+    def accusation_made_event(self):
+        """Handle the entire event of an accusation being made"""
+        accusation_list = inputs.get_accusation(
+            self.cards.characters, self.cards.weapons, self.cards.rooms
+        )
+        accusation = Accusation.from_list(accusation_list)
 
-        if type(card_showed) == str: card_showed = [card_showed]
-        if type(card_showed) == list: card_showed = card_showed
-        # To remove from the process any card which cannot be owned
-        for item in card_showed:
-            if item in self.cards_not_owned[player_showing]:
-                card_showed.remove(item)
-        # Not to repeat cards already added
-        if card_showed in self.cards_owned[player_showing]:
-            return
-        # Not to overwrite cards already determined
-        n = 0
-        while self.cards_owned[player_showing][n]:
-            n = n + 1
-        for card in card_showed:
-            self.cards_owned[player_showing][n].append(card)
-        return
+        player_showed = inputs.input_in_list(
+            "Which player showed the card?", self.players.keys()
+        )
+        player_showed = self.players[player_showed]
 
-    def interact_information(self):
-        for player in self.players_list:
-            for slot in self.cards_owned[player]:
-                for card in slot:
-                    if card in self.cards_not_owned[player]:
-                        slot.remove(card)
-                # If only one card remains, it is certain by construction
-                if len(slot) == 1:
-                    item = slot[0]
-                    self.remove_from_suspects(item)
-                    self.update_card_not_owned(self.players_list, item,
-                                               player_excl=player)
-                    # Remove slots with less info than the ones of lenght 1
-                    for slot in self.cards_owned[player]:
-                        if item in slot and len(slot) > 1:
-                            slot.clear()
-                # Check not to be left with duplicates of lenght one
-                if slot != []:
-                    while self.cards_owned[player].count(slot) > 1:
-                        self.cards_owned[player].remove(slot)
-                        self.cards_owned[player].append([])
-        # Repeat the updating with the most recent information
-        for player in self.players_list:
-            for slot in self.cards_owned[player]:
-                for card in slot:
-                    if card in self.cards_not_owned[player]:
-                        slot.remove(card)
+        players_passing = self.players_not_showing(player_showed)
+        self.update_card_not_owned(accusation.items_set, players_passing)
 
-    # 3) UTILITIES: Functions propedeutic to the functioning of the main ones
-    def input_in_list(self, text, type, accusation_list=None):
-        text = text + " "
-        player_input = input(text).title()
-        type = type.lower()  # to capture capitaliztion erros in the code
-        ref_list = {"characters" : self.characters, "weapons" : self.weapons,
-                    "rooms" : self.rooms, "players" : self.players_list,
-                    "accusation" : accusation_list, "items" : self.items,
-                    "actions" : ["1", "2", "3"]}
-        while player_input not in ref_list[type]:
-            help_word = "list"
-            if player_input != help_word.title():
-                print("Something went wrong. What you typed does not appear "
-                      f"among the {type}. Please retry. If you would "
-                      "like to see the list of items of the game type "
-                      f"'{help_word}'.\n")
-            player_input = input(text).title()
-            if player_input == help_word.title():
-                print(f"These are the {type}:")
-                print(*ref_list[type], sep=", ")
-        return player_input
+        # Distinguishing the actions between "You" and the other players
+        if self.active_player.name == "You":
+            card_showed = inputs.get_card_from_accusation(accusation.items_list)
 
-    def disp_guessings_probab(self):
-        self.prob_guessing = ((1 / len(self.suspects[0]))
-                              * (1 / len(self.suspects[1]))
-                              * (1 / len(self.suspects[2]))
-                              )
-        prob_guessing = format(self.prob_guessing, ".2%")
+            self.suspects.remove_one_from_suspects(card_showed)
+            self.update_card_not_owned(
+                card_showed, self.players, player_excluded=player_showed
+            )
 
-        if self.prob_guessing == 1:
-            print("You can solve the case with certainty now. "
-                  "The three items are:")
-            print(self.suspects[0][0])
-            print(self.suspects[1][0])
-            print(self.suspects[2][0])
+            self.update_card_owned(player_showed, card_showed)
 
-        elif self.nerd_mode:
-            print(f"The probability of randomly guessing is: {prob_guessing}")
-        return
-
-    def all_cards_known(self, player):
-        '''
-        Check if all the information is known about one player
-        '''
-        counter = 0
-        for slot in self.cards_owned[player]:
-            if len(slot) == 1:
-                counter = counter + 1
-        if counter == 3:
-            return True
         else:
-            return False
+            self.update_card_owned(player_showed, accusation.items_list)
 
-    def create_players_list(self):
-        player_position = None
-        while player_position not in range(1, self.players_number + 1):
-            player_position = int(input("What is your position in the turn? "
-                                        "Type 1 if first, 2 if second and so on"
-                                        ". Please provide a number from 1 to "
-                                        f"{self.players_number}. "))
-            if player_position not in range(1, self.players_number + 1):
-                print("The value you provided is not accepted, please retry.")
+    def players_not_showing(self, player_showing: Player) -> list[Player]:
+        """Return list of players between active player and player showing"""
+        start = self.players.index(self.active_player.name) + 1
+        end = self.players.index(player_showing.name) + 1
+        return [self.players[key] for key in self.players.keys()[start:end]]
 
-        self.players_list = [f"Player {i}"
-                             for i in range(1, self.players_number + 1)]
-        self.players_list[player_position - 1] = "You"
+    def update_card_not_owned(
+        self,
+        card_input: Union[str, list],
+        players_list: list[Player],
+        player_excluded=Union[None, Player],
+    ) -> None:
+        """Registers that one or more players do not own one or more cards"""
+        card_input_as_set = utilities.input_to_set(card_input)
 
-        return
+        for player in players_list:
+            if player != player_excluded:
+                player.add_cards_not_owned(card_input_as_set)
 
-    def create_cards_owned_list(self):
-        for player in self.players_list:
-            self.cards_owned[player] = [[] for i in range(self.cards_per_person)]
-            self.cards_not_owned[player] = []
+    def update_card_owned(
+        self, card_input: Union[str, list], player_to_update: Player
+    ) -> None:
+        # Not to proceed further if information about the player is complete
+        if player_to_update.all_cards_known():
+            return
 
-        self.cards_on_table = [[] for i in range(len(self.items)
-                                                 - self.cards_to_players - 3)]
-        return
+        card_input_as_set = utilities.input_to_set(card_input)
+
+        player_to_update.add_cards_owned(card_input_as_set)
+
+    # --------------------------------------------------------------------------
+    # ACCUSATION HANDLING
+    # --------------------------------------------------------------------------
+    def card_revealed_event(self) -> None:
+        """Handles the complete event of a card being revealed"""
+        if self.board.all_cards_revealed:
+            print(
+                "It looks like all the cards on the table had already been"
+                "revealed, please retry.\n"
+            )
+            return
+        revealed_card = inputs.input_in_list(
+            "Which card was revealed?", self.cards.all_cards
+        )
+        self.register_card_revealed(revealed_card)
+
+    def register_card_revealed(self, revealed_card: str) -> None:
+        """Register that a card has been revealed"""
+        self.suspects.remove_one_from_suspects(revealed_card)
+        self.update_card_not_owned(revealed_card, self.players)
+        self.board.add_card(revealed_card)
+
+    # --------------------------------------------------------------------------
+    # OTHER
+    # --------------------------------------------------------------------------
+    def player_by_index(self, index: int) -> Player:
+        """Return the nth player in the players dictionary"""
+        return self.players[self.players.keys()[index]]
+
+    def next_player(self) -> Player:
+        """Returns the new active player"""
+        current_player_index = self.players.keys().index(self.active_player.name)
+        new_index = (current_player_index + 1) % self.players_number
+        return self.player_by_index(new_index)
 
 
-# To test what was done up to now
-game = CluedoGame(players_number=6)
-game.main()
-input("\nPress any key to exit ")
+if __name__ == "__main__":
+    # To test what was done up to now
+    game = CluedoGame(players_number=6)
+    game.main()
+    input("\nPress any key to exit ")
