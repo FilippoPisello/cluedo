@@ -78,11 +78,12 @@ class CluedoGame:
 
         self.suspects.remove_multiple_from_suspects(user_owned_cards)
 
+        user = self.players.get_player_by_name("You")
         for card in user_owned_cards:
-            self.update_card_owned(card, self.players.get_player_by_name("You"))
+            self.update_card_owned(card, user)
 
         self.update_card_not_owned(
-            user_owned_cards, self.players.list, player_excluded="You"
+            user_owned_cards, self.players.list, player_excluded=user
         )
 
     # --------------------------------------------------------------------------
@@ -106,13 +107,13 @@ class CluedoGame:
 
             self.suspects.remove_one_from_suspects(card_showed)
             self.update_card_not_owned(
-                card_showed, self.players, player_excluded=player_showed
+                card_showed, self.players.list, player_excluded=player_showed
             )
 
-            self.update_card_owned(player_showed, card_showed)
+            self.update_card_owned(card_showed, player_showed)
 
         else:
-            self.update_card_owned(player_showed, accusation.items_list)
+            self.update_card_owned(accusation.items_list, player_showed)
 
     def update_card_not_owned(
         self,
@@ -157,7 +158,7 @@ class CluedoGame:
     def register_card_revealed(self, revealed_card: str) -> None:
         """Register that a card has been revealed"""
         self.suspects.remove_one_from_suspects(revealed_card)
-        self.update_card_not_owned(revealed_card, self.players)
+        self.update_card_not_owned(revealed_card, self.players.list)
         self.board.add_card(revealed_card)
 
     # --------------------------------------------------------------------------

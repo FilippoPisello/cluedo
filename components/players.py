@@ -46,7 +46,7 @@ class Players:
         """Return list of players between active player and last_player,
         exclusive on both hands"""
         start = self.active_index + 1
-        end = self.list.index(last_player) + 1
+        end = self.list.index(last_player)
         return self.list[start:end]
 
     def display_players_info(self):

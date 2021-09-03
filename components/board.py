@@ -18,8 +18,11 @@ class Board:
     @property
     def all_cards_revealed(self):
         """Return true if number of stored cards correspond to maximum cards"""
-        return len(self.total_cards) == self.cards
+        return self.total_cards == len(self.cards)
 
     def limit_reached_message(self):
         """Alert that a new card cannot be added to the board"""
         print("All the cards of the board have already been revealed")
+
+    def __str__(self) -> str:
+        return ", ".join(self.cards)

@@ -60,6 +60,12 @@ def get_accusation(
     return [character, weapon, room]
 
 
+def get_player_who_showed(players_names: list[str]) -> str:
+    """Collect name of the player who showed the card"""
+    msg_displayed = "Which player showed the card?"
+    return input_in_list(msg_displayed, players_names)
+
+
 def get_card_from_accusation(accusation_list: list[str]) -> str:
     """Collect card that was shown among the accusation ones"""
     msg_displayed = "Which card was shown to you?"
@@ -68,7 +74,7 @@ def get_card_from_accusation(accusation_list: list[str]) -> str:
 
 def input_in_list(message: str, control_list: list) -> str:
     """Collects user input and returns it only when in control list"""
-    player_input = input(message + "\n").trim().title()
+    player_input = input(message + "\n").strip().title()
 
     while player_input not in control_list:
         help_word = "list"
@@ -80,7 +86,7 @@ def input_in_list(message: str, control_list: list) -> str:
                 f"'{help_word}'.\n"
             )
 
-        player_input = input(message).title().trim().title()
+        player_input = input(message + "\n").title().strip().title()
         if player_input == help_word.title():
             print("These are the accepted values:")
             print(*control_list, sep=", ")

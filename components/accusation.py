@@ -24,4 +24,4 @@ class Accusation:
             raise ValueError(
                 f"Accusation list must be of len 3, {input_list} was passed"
             )
-        cls(input_list[0], input_list[1], input_list[2])
+        return cls(input_list[0], input_list[1], input_list[2])

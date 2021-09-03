@@ -7,10 +7,15 @@ class Suspects:
         self.rooms = set(rooms)
 
     @property
-    def guessing_probability(self):
+    def guessing_probability(self) -> float:
         """Return probability of correctly making an accusation by randomly
         picking from the available suspects"""
         return 1 / (len(self.characters) * len(self.weapons) * len(self.rooms))
+
+    @property
+    def guessing_probability_as_str(self) -> str:
+        """Return guessing probability formatted as percentage with two decimals"""
+        return format(self.guessing_probability, ".2%")
 
     def remove_multiple_from_suspects(self, items: list[str]) -> None:
         """Remove items from suspects if present, evaluated individually"""
@@ -23,14 +28,21 @@ class Suspects:
         self.weapons.discard(item)
         self.rooms.discard(item)
 
-    def display_guessing_probability_message(self):
+    def display_guessing_probability_message(self) -> None:
         """Display a message about the guessing probability"""
-        prob = self.guessing_probability
-        if prob == 1:
+        if self.guessing_probability == 1:
             print("You can solve the case with certainty now.\nThe three items are:")
             print(self.characters)
             print(self.weapons)
             print(self.rooms)
         else:
-            prob = format(prob, ".2%")
-            print(f"The probability of randomly guessing is: {prob}")
+            print(
+                f"The probability of randomly guessing is: {self.guessing_probability_as_str}"
+            )
+
+    def __str__(self):
+        characters = "CHARACTERS: " + ", ".join(self.characters)
+        weapons = "\nWEAPONS: " + ", ".join(self.weapons)
+        rooms = "\nROOMS: " + ", ".join(self.rooms)
+        prob = f"\nGuessing probability: {self.guessing_probability_as_str}"
+        return characters + weapons + rooms + prob
