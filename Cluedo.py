@@ -103,17 +103,19 @@ class CluedoGame:
 
         # Distinguishing the actions between "You" and the other players
         if self.players.active.name == "You":
-            card_showed = inputs.get_card_from_accusation(accusation.items_list)
-
-            self.suspects.remove_one_from_suspects(card_showed)
-            self.update_card_not_owned(
-                card_showed, self.players.list, player_excluded=player_showed
-            )
-
-            self.update_card_owned(card_showed, player_showed)
+            self.card_shown_to_user(accusation, player_showed)
 
         else:
             self.update_card_owned(accusation.items_list, player_showed)
+
+    def card_shown_to_user(self, accusation: Accusation, player_showed: Player) -> None:
+        """Handle the event of a card being shown to the user"""
+        card_showed = inputs.get_card_from_accusation(accusation.items_list)
+
+        self.suspects.remove_one_from_suspects(card_showed)
+        self.update_card_not_owned(card_showed, self.players.list, player_showed)
+
+        self.update_card_owned(card_showed, player_showed)
 
     def update_card_not_owned(
         self,
